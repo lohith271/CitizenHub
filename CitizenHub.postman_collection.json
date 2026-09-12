@@ -1,0 +1,567 @@
+{
+  "info": {
+    "name": "CitizenHub API Collection",
+    "description": "Complete test suite for CitizenHub Civic Mobilization Platform (MERN)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "campaignerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "citizenToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pendingCampaignerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sampleCampaignId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sampleTaskId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "uploadedProofUrl",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "02. Authentication & Admin Flow",
+      "item": [
+        {
+          "name": "1. Admin Login (Genesis Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('adminToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@citizenhub.org\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "2. Admin - View Pending Campaigners",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.campaigners && jsonData.campaigners.length > 0) {",
+                  "    pm.collectionVariables.set('pendingCampaignerId', jsonData.campaigners[0]._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/pending-campaigners",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "pending-campaigners"]
+            }
+          }
+        },
+        {
+          "name": "3. Admin - Approve Pending Campaigner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/review-campaigner/{{pendingCampaignerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "review-campaigner", "{{pendingCampaignerId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Register New Citizen (Volunteer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amit Sharma\",\n  \"email\": \"amit.sharma@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"citizen\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"skills\": [\"Graphic Design\", \"Social Media\", \"Video Editing\"],\n  \"causes\": [\"Air Pollution\", \"Forest & Wildlife\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "4b. Apply as Campaigner (Goes to Pending Approval)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sameer Joshi\",\n  \"email\": \"sameer@youthforclimate.org\",\n  \"password\": \"password123\",\n  \"role\": \"campaigner\",\n  \"organization\": \"Youth for Climate Action\",\n  \"organizationBio\": \"Grassroots collective organizing student climate strikes across Maharashtra.\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "5. Citizen Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('citizenToken', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rohan.designer@gmail.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "6. Refresh Access Token (Silent Renewal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "7. Get My Profile (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{citizenToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Campaigns Flow",
+      "item": [
+        {
+          "name": "1. Get All Active Campaigns",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.campaigns && jsonData.campaigns.length > 0) {",
+                  "    pm.collectionVariables.set('sampleCampaignId', jsonData.campaigns[0]._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campaigns"]
+            }
+          }
+        },
+        {
+          "name": "2. Get Single Campaign Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/campaigns/{{sampleCampaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campaigns", "{{sampleCampaignId}}"]
+            }
+          }
+        },
+        {
+          "name": "3. Sign Petition (Citizen Action)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{citizenToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campaigns/{{sampleCampaignId}}/sign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campaigns", "{{sampleCampaignId}}", "sign"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Tasks & Volunteer Mobilization",
+      "item": [
+        {
+          "name": "1. Get Available Tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "var available = jsonData.tasks.find(t => t.status === 'available');",
+                  "if (available) {",
+                  "    pm.collectionVariables.set('sampleTaskId', available._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "2. Citizen Claims Task (Starts 48h timer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{citizenToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{sampleTaskId}}/claim",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{sampleTaskId}}", "claim"]
+            }
+          }
+        },
+        {
+          "name": "3a. Citizen Submits Work Proof - Image Upload (Cloudinary / Local)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Task status updated to under_review\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.task.status).to.eql(\"under_review\");",
+                  "});",
+                  "",
+                  "pm.test(\"Image Upload Verification: URL generated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.task).to.have.property(\"proofSubmission\");",
+                  "    var url = jsonData.task.proofSubmission.submissionUrl;",
+                  "    pm.expect(url).to.be.a(\"string\").and.not.empty;",
+                  "",
+                  "    pm.collectionVariables.set(\"uploadedProofUrl\", url);",
+                  "",
+                  "    if (url.includes(\"res.cloudinary.com\")) {",
+                  "        console.log(\"☁️ [Cloudinary Upload Verified]: \" + url);",
+                  "    } else if (url.includes(\"/uploads/proofs/\")) {",
+                  "        console.log(\"💾 [Local Server Fallback Verified]: \" + url);",
+                  "    } else {",
+                  "        console.log(\"🔗 [Submission URL]: \" + url);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{citizenToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "Attach a JPG, PNG, or WebP file from your computer"
+                },
+                {
+                  "key": "notes",
+                  "value": "Completed field campaign photo evidence.",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{sampleTaskId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{sampleTaskId}}", "submit"]
+            }
+          }
+        },
+        {
+          "name": "3b. Citizen Submits Work Proof - External URL (JSON)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Task status updated to under_review\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.task.status).to.eql(\"under_review\");",
+                  "});",
+                  "",
+                  "pm.test(\"Verification: Proof submission URL recorded\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.task.proofSubmission.submissionUrl).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{citizenToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submissionUrl\": \"https://drive.google.com/file/d/sample-poster-design.png\",\n  \"notes\": \"Completed all 3 requested Instagram posters with high-res exports.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{sampleTaskId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{sampleTaskId}}", "submit"]
+            }
+          }
+        },
+        {
+          "name": "4. Admin/Campaigner Approves Work (Completed + Points Awarded)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\",\n  \"feedback\": \"Excellent graphics, properly sized and formatted for social channels!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{sampleTaskId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{sampleTaskId}}", "review"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. INR Donations (Razorpay)",
+      "item": [
+        {
+          "name": "1. Create Razorpay Order (INR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.orderId) {",
+                  "    pm.collectionVariables.set('sampleOrderId', jsonData.orderId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaignId\": \"{{sampleCampaignId}}\",\n  \"amount\": 500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/create-order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "create-order"]
+            }
+          }
+        },
+        {
+          "name": "2. Verify Razorpay Payment & Increment Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaignId\": \"{{sampleCampaignId}}\",\n  \"amount\": 500,\n  \"donorName\": \"Anand Kumar\",\n  \"donorEmail\": \"anand.citizen@example.com\",\n  \"razorpay_order_id\": \"{{sampleOrderId}}\",\n  \"razorpay_payment_id\": \"pay_rzp_mock_987654\",\n  \"razorpay_signature\": \"mock_verified_signature\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "verify"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Donation Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Visual Dashboard Analytics",
+      "item": [
+        {
+          "name": "Get Analytics Overview (Charts Data)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "overview"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
