@@ -8,6 +8,10 @@ import Register from './pages/Register';
 import Onboarding from './pages/Onboarding';
 import ActionFeed from './pages/ActionFeed';
 import MyImpact from './pages/MyImpact';
+import AdminApprovals from './pages/AdminApprovals';
+import CampaignBuilder from './pages/CampaignBuilder';
+import VolunteerDirectory from './pages/VolunteerDirectory';
+import TaskReviewQueue from './pages/TaskReviewQueue';
 
 // Simple route guard for logged-in citizens
 const PrivateRoute = ({ children }) => {
@@ -51,9 +55,13 @@ function AppContent() {
             }
           />
 
-          {/* Placeholders for Member 3 & Member 4 (connected next) */}
-          <Route path="/admin/approvals" element={<div className="max-w-4xl mx-auto p-12 text-center text-slate-500">Member 3 Admin Approvals Hub</div>} />
-          <Route path="/campaigner/studio" element={<div className="max-w-4xl mx-auto p-12 text-center text-slate-500">Member 3 Campaigner Studio</div>} />
+          {/* Member 3 Campaigner & Admin Routes */}
+          <Route path="/admin/approvals" element={<AdminApprovals />} />
+          <Route path="/campaigner/studio" element={<CampaignBuilder />} />
+          <Route path="/campaigner/volunteers" element={<VolunteerDirectory />} />
+          <Route path="/campaigner/reviews" element={<TaskReviewQueue />} />
+
+          {/* Placeholder for Member 4 (connected next) */}
           <Route path="/analytics" element={<div className="max-w-4xl mx-auto p-12 text-center text-slate-500">Member 4 Analytics Dashboard</div>} />
 
           <Route path="*" element={<Navigate to="/" />} />

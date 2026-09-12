@@ -71,6 +71,12 @@ const Navbar = () => {
                 >
                   Volunteer Directory
                 </Link>
+                <Link
+                  to="/campaigner/reviews"
+                  className="px-3.5 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  Review Queue
+                </Link>
               </>
             )}
 
