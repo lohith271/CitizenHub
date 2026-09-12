@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TaskCard from '../components/TaskCard';
+import RazorpayModal from '../components/RazorpayModal';
 import { Sparkles, CheckCircle2, HeartHandshake, Filter, Search, ArrowRight, Flame } from 'lucide-react';
 
 const ActionFeed = () => {
@@ -14,9 +15,6 @@ const ActionFeed = () => {
 
   // Donation state
   const [donationModal, setDonationModal] = useState(null); // holds campaign
-  const [donationAmount, setDonationAmount] = useState(500);
-  const [donating, setDonating] = useState(false);
-  const [donationSuccess, setDonationSuccess] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -54,49 +52,7 @@ const ActionFeed = () => {
     }
   };
 
-  const handleDonationSubmit = async (e) => {
-    e.preventDefault();
-    setDonating(true);
-    setDonationSuccess(null);
 
-    try {
-      // 1. Create Order
-      const orderRes = await api.post('/donations/create-order', {
-        campaignId: donationModal._id,
-        amount: donationAmount,
-      });
-
-      if (orderRes.data.success) {
-        // 2. Verify Payment (simulated test flow or live Razorpay modal)
-        const verifyRes = await api.post('/donations/verify', {
-          campaignId: donationModal._id,
-          amount: donationAmount,
-          donorName: user?.name || 'Generous Citizen',
-          donorEmail: user?.email || 'citizen@citizenhub.org',
-          razorpay_order_id: orderRes.data.orderId,
-          razorpay_payment_id: `pay_mock_${Date.now()}`,
-          razorpay_signature: 'mock_verified_signature',
-        });
-
-        if (verifyRes.data.success) {
-          setDonationSuccess(verifyRes.data.message);
-          setCampaigns((prev) =>
-            prev.map((c) =>
-              c._id === donationModal._id ? { ...c, raisedAmount: verifyRes.data.campaignRaised } : c
-            )
-          );
-          setTimeout(() => {
-            setDonationModal(null);
-            setDonationSuccess(null);
-          }, 2000);
-        }
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Donation failed');
-    } finally {
-      setDonating(false);
-    }
-  };
 
   // Filter tasks matching user skills
   const userSkills = user?.skills || [];
@@ -262,67 +218,19 @@ const ActionFeed = () => {
         </div>
       </div>
 
-      {/* DONATION MODAL */}
+      {/* DONATION MODAL (Member 4 - Razorpay Single Currency INR) */}
       {donationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
-            <h3 className="text-xl font-extrabold text-slate-900">Contribute in Single Currency (INR)</h3>
-            <p className="text-xs text-slate-500">{donationModal.title}</p>
-
-            {donationSuccess && (
-              <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200">
-                {donationSuccess}
-              </div>
-            )}
-
-            <form onSubmit={handleDonationSubmit} className="space-y-4">
-              <div className="grid grid-cols-4 gap-2">
-                {[200, 500, 1000, 2500].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setDonationAmount(amt)}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                      donationAmount === amt
-                        ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
-                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    ₹{amt}
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Custom Amount (₹ INR)</label>
-                <input
-                  type="number"
-                  min="50"
-                  value={donationAmount}
-                  onChange={(e) => setDonationAmount(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setDonationModal(null)}
-                  className="py-2.5 px-4 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={donating}
-                  className="flex-1 py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow disabled:opacity-50"
-                >
-                  {donating ? 'Processing Razorpay...' : `Pay ₹${donationAmount} via Razorpay`}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <RazorpayModal
+          campaign={donationModal}
+          onClose={() => setDonationModal(null)}
+          onSuccess={(raised) => {
+            setCampaigns((prev) =>
+              prev.map((c) =>
+                c._id === donationModal._id ? { ...c, raisedAmount: raised } : c
+              )
+            );
+          }}
+        />
       )}
     </div>
   );

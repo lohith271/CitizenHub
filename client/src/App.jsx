@@ -12,6 +12,7 @@ import AdminApprovals from './pages/AdminApprovals';
 import CampaignBuilder from './pages/CampaignBuilder';
 import VolunteerDirectory from './pages/VolunteerDirectory';
 import TaskReviewQueue from './pages/TaskReviewQueue';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
 // Simple route guard for logged-in citizens
 const PrivateRoute = ({ children }) => {
@@ -61,8 +62,8 @@ function AppContent() {
           <Route path="/campaigner/volunteers" element={<VolunteerDirectory />} />
           <Route path="/campaigner/reviews" element={<TaskReviewQueue />} />
 
-          {/* Placeholder for Member 4 (connected next) */}
-          <Route path="/analytics" element={<div className="max-w-4xl mx-auto p-12 text-center text-slate-500">Member 4 Analytics Dashboard</div>} />
+          {/* Member 4 Analytics Dashboard */}
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
