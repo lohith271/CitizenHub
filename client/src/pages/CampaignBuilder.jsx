@@ -362,15 +362,19 @@ const CampaignBuilder = () => {
                       </div>
 
                       <div>
-                        <label className="font-bold text-slate-600">Auto-Release Timer (Hours):</label>
+                        <label className="font-bold text-slate-600">Task Completion Deadline:</label>
                         <select
                           value={task.deadlineHours}
                           onChange={(e) => updateTask(idx, 'deadlineHours', e.target.value)}
                           className="w-full mt-1 px-2 py-1.5 bg-slate-50 border rounded-lg font-medium"
                         >
-                          <option value="24">24 Hours</option>
-                          <option value="48">48 Hours (Recommended)</option>
-                          <option value="72">72 Hours</option>
+                          <option value="12">12 Hours (Flash Rapid Response)</option>
+                          <option value="24">24 Hours (1 Day)</option>
+                          <option value="48">48 Hours (2 Days - Standard)</option>
+                          <option value="72">72 Hours (3 Days)</option>
+                          <option value="120">120 Hours (5 Days)</option>
+                          <option value="168">168 Hours (1 Week)</option>
+                          <option value="336">336 Hours (2 Weeks)</option>
                         </select>
                       </div>
                     </div>

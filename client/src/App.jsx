@@ -13,6 +13,7 @@ import CampaignBuilder from './pages/CampaignBuilder';
 import VolunteerDirectory from './pages/VolunteerDirectory';
 import TaskReviewQueue from './pages/TaskReviewQueue';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import AdminLogin from './pages/AdminLogin';
 
 // Simple route guard for logged-in citizens
 const PrivateRoute = ({ children }) => {
@@ -28,8 +29,10 @@ function AppContent() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/campaigns" element={<Landing />} />
+          <Route path="/campaigns" element={<ActionFeed />} />
+          <Route path="/campaigns/:id" element={<ActionFeed />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/register" element={<Register />} />
           <Route
             path="/onboarding"

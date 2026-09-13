@@ -175,17 +175,31 @@ router.post('/:id/claim', protect, async (req, res) => {
 // @route   POST /api/tasks/:id/submit
 // @desc    Citizen submits proof of work (Changes status to under_review)
 // @access  Private (Citizen assignee)
-router.post('/:id/submit', protect, upload.single('image'), async (req, res) => {
+router.post('/:id/submit', protect, upload.array('images', 5), async (req, res) => {
   try {
     let submissionUrl = (req.body && req.body.submissionUrl) || '';
     const notes = (req.body && req.body.notes) || '';
+    const photos = [];
 
-    // If an image file was uploaded, process it (Cloudinary or local fallback)
-    if (req.file) {
+    // If multiple image files were uploaded, process them
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploadedUrl = await processUploadedPhoto(file, req);
+        if (uploadedUrl) {
+          photos.push(uploadedUrl);
+        }
+      }
+    } else if (req.file) {
+      // Single file fallback
       const uploadedUrl = await processUploadedPhoto(req.file, req);
       if (uploadedUrl) {
-        submissionUrl = uploadedUrl;
+        photos.push(uploadedUrl);
       }
+    }
+
+    // Set first photo as submissionUrl if none provided
+    if (photos.length > 0 && !submissionUrl) {
+      submissionUrl = photos[0];
     }
 
     const task = await Task.findById(req.params.id);
@@ -210,6 +224,7 @@ router.post('/:id/submit', protect, upload.single('image'), async (req, res) => 
 
     task.proofSubmission = {
       submissionUrl: submissionUrl || '',
+      photos: photos,
       notes: notes || 'Work completed and submitted for campaigner review.',
       submittedAt: new Date(),
     };

@@ -58,6 +58,7 @@ const TaskSchema = new mongoose.Schema(
     },
     proofSubmission: {
       submissionUrl: { type: String },
+      photos: [{ type: String }],
       notes: { type: String },
       submittedAt: { type: Date },
     },

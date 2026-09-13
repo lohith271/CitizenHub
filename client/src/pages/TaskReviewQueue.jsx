@@ -113,18 +113,44 @@ const TaskReviewQueue = () => {
 
                 {/* Submitted Proof Display */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                  {/* Photo or Link */}
+                  {/* Photos and Cloud Link Attachment */}
                   <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Submitted Proof Attachment
+                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      <span>Submitted Proof Attachments</span>
+                      {task.proofSubmission?.photos?.length > 1 && (
+                        <span className="text-[11px] font-extrabold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">
+                          {task.proofSubmission.photos.length} Photos Attached
+                        </span>
+                      )}
                     </div>
-                    {isImage ? (
-                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-white max-h-64 flex items-center justify-center">
-                        <img
-                          src={submissionUrl}
-                          alt="Proof"
-                          className="w-full h-full object-contain max-h-64"
-                        />
+
+                    {/* Photos Gallery */}
+                    {(task.proofSubmission?.photos?.length > 0 || isImage) ? (
+                      <div className="space-y-2">
+                        <div className={`grid gap-2 ${
+                          (task.proofSubmission?.photos?.length || 1) > 1 ? 'grid-cols-2' : 'grid-cols-1'
+                        }`}>
+                          {(task.proofSubmission?.photos && task.proofSubmission.photos.length > 0
+                            ? task.proofSubmission.photos
+                            : [submissionUrl]
+                          ).map((imgUrl, i) => (
+                            <a
+                              key={i}
+                              href={imgUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-xl overflow-hidden border border-slate-200 bg-white max-h-52 flex items-center justify-center hover:opacity-90 transition-opacity"
+                              title="Click to view full size"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Proof ${i + 1}`}
+                                className="w-full h-full object-cover max-h-52"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                        <div className="text-[10px] text-slate-400 italic">Click any image to view full resolution</div>
                       </div>
                     ) : submissionUrl ? (
                       <a
@@ -139,6 +165,21 @@ const TaskReviewQueue = () => {
                     ) : (
                       <div className="p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-400">
                         No external attachment provided.
+                      </div>
+                    )}
+
+                    {/* If both photos and a link exist */}
+                    {task.proofSubmission?.photos?.length > 0 && submissionUrl && !isImage && (
+                      <div className="mt-3">
+                        <a
+                          href={submissionUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2.5 bg-white rounded-xl border border-slate-200 text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-brand-600" />
+                          Additional Link Attached
+                        </a>
                       </div>
                     )}
                   </div>

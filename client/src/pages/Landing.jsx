@@ -122,7 +122,7 @@ const Landing = () => {
                     </div>
 
                     <Link
-                      to={`/campaigns/${camp._id}`}
+                      to="/campaigns"
                       className="mt-4 block w-full py-2.5 text-center text-sm font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl transition-colors"
                     >
                       Take Action

@@ -10,11 +10,11 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
   // Submit form state
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [notes, setNotes] = useState('');
-  const [photoFile, setPhotoFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState('');
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
   const [submitError, setSubmitError] = useState('');
 
-  // 48-Hour Countdown calculation
+  // Auto-Release Countdown calculation (supports custom deadlineHours)
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -24,9 +24,14 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
         if (diff <= 0) {
           setTimeLeft('Expired (Auto-releasing...)');
         } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          setTimeLeft(`${hours}h ${mins}m left`);
+          if (days > 0) {
+            setTimeLeft(`${days}d ${hours}h left`);
+          } else {
+            setTimeLeft(`${hours}h ${mins}m left`);
+          }
         }
       };
       updateTimer();
@@ -36,11 +41,18 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
   }, [task]);
 
   const handlePhotoSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const combined = [...photoFiles, ...files].slice(0, 5); // Up to 5 photos
+      setPhotoFiles(combined);
+      setPreviewUrls(combined.map((f) => URL.createObjectURL(f)));
     }
+  };
+
+  const handleRemovePhoto = (idx) => {
+    const updated = photoFiles.filter((_, i) => i !== idx);
+    setPhotoFiles(updated);
+    setPreviewUrls(updated.map((f) => URL.createObjectURL(f)));
   };
 
   const handleClaim = async () => {
@@ -64,8 +76,10 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
 
     try {
       const formData = new FormData();
-      if (photoFile) {
-        formData.append('image', photoFile);
+      if (photoFiles.length > 0) {
+        photoFiles.forEach((file) => {
+          formData.append('images', file);
+        });
       }
       if (submissionUrl) {
         formData.append('submissionUrl', submissionUrl);
@@ -78,6 +92,8 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
 
       if (res.data.success) {
         setModalOpen(false);
+        setPhotoFiles([]);
+        setPreviewUrls([]);
         onTaskUpdated && onTaskUpdated(res.data.task);
       }
     } catch (err) {
@@ -144,7 +160,7 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
               disabled={claiming}
               className="w-full py-2 px-3 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
             >
-              {claiming ? 'Claiming...' : 'Claim Task (48h Timer)'}
+              {claiming ? 'Claiming...' : `Claim Task (${task.deadlineHours || 48}h Timer)`}
             </button>
           )}
 
@@ -202,20 +218,38 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
             )}
 
             <form onSubmit={handleSubmitProof} className="space-y-4">
-              {/* Photo Upload Input */}
+              {/* Multiple Photo Upload Input */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
-                  Direct Photo Upload (Phone Camera / Laptop)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-slate-700">
+                    Upload Photos (Camera / Gallery)
+                  </label>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {photoFiles.length} of 5 photos selected
+                  </span>
+                </div>
                 <input
                   type="file"
+                  multiple
                   accept="image/*"
                   onChange={handlePhotoSelect}
                   className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
                 />
-                {previewUrl && (
-                  <div className="mt-2 h-32 rounded-xl overflow-hidden border border-slate-200">
-                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+
+                {previewUrls.length > 0 && (
+                  <div className="mt-2.5 grid grid-cols-3 gap-2">
+                    {previewUrls.map((url, idx) => (
+                      <div key={idx} className="relative h-20 rounded-xl overflow-hidden border border-slate-200 group">
+                        <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(idx)}
+                          className="absolute top-1 right-1 w-5 h-5 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

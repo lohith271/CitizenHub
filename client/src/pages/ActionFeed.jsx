@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TaskCard from '../components/TaskCard';
@@ -7,6 +8,7 @@ import { Sparkles, CheckCircle2, HeartHandshake, Filter, Search, ArrowRight, Fla
 
 const ActionFeed = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,12 @@ const ActionFeed = () => {
   };
 
   const handleSignPetition = async (campaignId) => {
+    if (!user) {
+      alert('Please sign in or register to sign this petition!');
+      navigate('/login');
+      return;
+    }
+
     try {
       const res = await api.post(`/campaigns/${campaignId}/sign`);
       if (res.data.success) {
@@ -51,8 +59,6 @@ const ActionFeed = () => {
       alert(err.response?.data?.message || 'Error signing petition');
     }
   };
-
-
 
   // Filter tasks matching user skills
   const userSkills = user?.skills || [];
@@ -70,24 +76,32 @@ const ActionFeed = () => {
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-bold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
-            Personalized For You
+            {user ? 'Personalized For You' : 'Citizen Movements & Tasks'}
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-            Welcome back, {user?.name}!
+            {user ? `Welcome back, ${user?.name}!` : 'Collective Civic Action Feed'}
           </h1>
           <p className="text-slate-300 text-sm sm:text-base mt-2">
-            Showing actions in <strong className="text-white">{user?.city || 'India'}</strong> matching your skills:{' '}
-            <span className="text-brand-300 font-semibold">{userSkills.join(', ') || 'Any'}</span>.
+            {user ? (
+              <>
+                Showing actions in <strong className="text-white">{user?.city || 'India'}</strong> matching your skills:{' '}
+                <span className="text-brand-300 font-semibold">{userSkills.join(', ') || 'General Support'}</span>.
+              </>
+            ) : (
+              'Discover urgent campaigns across India, sign digital petitions, or claim skill-based volunteer tasks.'
+            )}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-xs">
-            <span className="bg-white/10 px-3 py-1 rounded-full text-slate-200">
-              Reliability Score: <strong className="text-brand-300">{user?.reliabilityScore || 100} Pts</strong>
-            </span>
-            <span className="bg-white/10 px-3 py-1 rounded-full text-slate-200">
-              Badge: <strong className="text-amber-300">{user?.badges?.[0] || 'Advocate'}</strong>
-            </span>
-          </div>
+          {user && (
+            <div className="mt-5 flex flex-wrap gap-2 text-xs">
+              <span className="bg-white/10 px-3 py-1 rounded-full text-slate-200">
+                Reliability Score: <strong className="text-brand-300">{user?.reliabilityScore || 100} Pts</strong>
+              </span>
+              <span className="bg-white/10 px-3 py-1 rounded-full text-slate-200">
+                Badge: <strong className="text-amber-300">{user?.badges?.[0] || 'Advocate'}</strong>
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
