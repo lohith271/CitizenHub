@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TaskCard from '../components/TaskCard';
@@ -138,9 +138,9 @@ const ActionFeed = () => {
           <div>
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-500" />
-              Skill-Based Action Tasks (48h Timers)
+              Skill-Based Volunteer Tasks (Time-Boxed Actions)
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">Claim a task matching your expertise, submit proof, and get verified.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Claim tasks matching your expertise, submit photo proofs, and earn reliability points.</p>
           </div>
         </div>
 
@@ -161,10 +161,21 @@ const ActionFeed = () => {
 
       {/* Active Campaigns & 1-Click Petitions */}
       <div className="pt-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <HeartHandshake className="w-5 h-5 text-brand-600" />
-          Active Public Campaigns
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <HeartHandshake className="w-5 h-5 text-brand-600" />
+              Urgent Movement Petitions
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Sign active petitions or explore full demands.</p>
+          </div>
+          <Link
+            to="/campaigns"
+            className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1 hover:underline"
+          >
+            Explore All Campaigns in Directory <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {campaigns.map((camp) => {
