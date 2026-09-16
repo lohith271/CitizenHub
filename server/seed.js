@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const dns = require('dns');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Campaign = require('./models/Campaign');
@@ -9,6 +10,9 @@ const Donation = require('./models/Donation');
 const seedData = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/citizenhub';
+    if (process.env.MONGO_DNS_SERVERS) {
+      dns.setServers(process.env.MONGO_DNS_SERVERS.split(',').map((server) => server.trim()));
+    }
     await mongoose.connect(mongoUri);
     console.log('[Seed]: Connected to MongoDB...');
 
@@ -150,6 +154,7 @@ const seedData = async () => {
       raisedAmount: 142500,
       currency: 'INR',
       organizer: campaigner1._id,
+      status: 'active',
       modularBlocks: {
         hasPetition: true,
         hasTasks: true,
@@ -176,6 +181,7 @@ const seedData = async () => {
       raisedAmount: 215000,
       currency: 'INR',
       organizer: campaigner1._id,
+      status: 'active',
       modularBlocks: {
         hasPetition: true,
         hasTasks: true,
@@ -203,6 +209,7 @@ const seedData = async () => {
       raisedAmount: 32000,
       currency: 'INR',
       organizer: admin._id,
+      status: 'active',
       modularBlocks: {
         hasPetition: true,
         hasTasks: true,

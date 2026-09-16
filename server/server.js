@@ -1,7 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const { execFile } = require('child_process');
 const connectDB = require('./config/db');
+const { protect } = require('./middleware/authMiddleware');
+const { authorize } = require('./middleware/roleMiddleware');
 
 // Route files
 const authRoutes = require('./routes/auth');
@@ -18,10 +22,52 @@ const Donation = require('./models/Donation');
 // Initialize app
 const app = express();
 
+const retrainCampaignModel = () => {
+  return new Promise((resolve, reject) => {
+    const modelScriptPath = path.join(__dirname, '..', 'ml', 'campaign_success_model.py');
+    const pythonExecutable = process.env.PYTHON_BIN || 'python';
+
+    execFile(pythonExecutable, [modelScriptPath], { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[ML Retrain] Failed to train model:', error.message);
+        if (stderr) console.error(stderr.trim());
+        return reject(error);
+      }
+
+      if (stdout) console.log(stdout.trim());
+      if (stderr) console.warn(stderr.trim());
+      console.log('[ML Retrain] Model retrained successfully.');
+      resolve({ success: true, output: stdout.trim() });
+    });
+  });
+};
+
+const predictCampaignSuccess = (campaign) => {
+  return new Promise((resolve, reject) => {
+    const modelScriptPath = path.join(__dirname, '..', 'ml', 'campaign_success_model.py');
+    const pythonExecutable = process.env.PYTHON_BIN || 'python';
+    const payload = JSON.stringify(campaign);
+
+    execFile(pythonExecutable, [modelScriptPath, '--predict', payload], { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[ML Predict] Prediction failed:', error.message);
+        if (stderr) console.error(stderr.trim());
+        return reject(error);
+      }
+
+      try {
+        const result = JSON.parse(stdout.trim());
+        resolve(result);
+      } catch (parseError) {
+        console.error('[ML Predict] Invalid JSON response:', stdout.trim());
+        reject(parseError);
+      }
+    });
+  });
+};
+
 // Connect Database
 connectDB();
-
-const path = require('path');
 
 // Middlewares
 app.use(cors({ origin: '*' }));
@@ -42,6 +88,40 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
   });
+});
+
+app.post('/api/ml/retrain', protect, authorize('admin'), async (req, res) => {
+  try {
+    const result = await retrainCampaignModel();
+    res.json({
+      success: true,
+      message: 'Campaign success model retrained successfully',
+      result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrain campaign success model',
+      error: error.message,
+    });
+  }
+});
+
+app.post('/api/ml/predict', protect, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const prediction = await predictCampaignSuccess(payload);
+    res.json({
+      success: true,
+      prediction,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to predict campaign success',
+      error: error.message,
+    });
+  }
 });
 
 // Analytics Overview API (for visual dashboards)
@@ -108,6 +188,17 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+retrainCampaignModel().catch((error) => {
+  console.error('[ML Retrain] Initial retraining failed at startup:', error.message);
+});
+
+setInterval(() => {
+  retrainCampaignModel().catch((error) => {
+    console.error('[ML Retrain] Scheduled retraining failed:', error.message);
+  });
+}, 24 * 60 * 60 * 1000);
+
 app.listen(PORT, () => {
   console.log(`[CitizenHub Server] Running on http://localhost:${PORT}`);
 });

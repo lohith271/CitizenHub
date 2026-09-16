@@ -52,6 +52,10 @@ const CampaignSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    targetVolunteers: {
+      type: Number,
+      default: 25,
+    },
     targetAmount: {
       type: Number,
       default: 100000,
@@ -82,8 +86,8 @@ const CampaignSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'active', 'paused', 'completed'],
-      default: 'active',
+      enum: ['draft', 'pending_approval', 'active', 'paused', 'completed', 'rejected'],
+      default: 'pending_approval',
     },
     signers: [
       {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Campaign = require('../models/Campaign');
+const Task = require('../models/Task');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
@@ -30,14 +31,64 @@ router.get('/', async (req, res) => {
       .populate('organizer', 'name email role')
       .sort({ createdAt: -1 });
 
+    const campaignIds = campaigns.map((campaign) => campaign._id);
+    const volunteerCounts = await Task.aggregate([
+      { $match: { campaignId: { $in: campaignIds }, assignedTo: { $ne: null } } },
+      { $group: { _id: '$campaignId', volunteers: { $addToSet: '$assignedTo' } } },
+      { $project: { volunteerCount: { $size: '$volunteers' } } },
+    ]);
+    const volunteerCountByCampaign = new Map(
+      volunteerCounts.map((item) => [item._id.toString(), item.volunteerCount])
+    );
+
     res.json({
       success: true,
       count: campaigns.length,
-      campaigns,
+      campaigns: campaigns.map((campaign) => ({
+        ...campaign.toObject(),
+        volunteerCount: volunteerCountByCampaign.get(campaign._id.toString()) || 0,
+      })),
     });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     res.status(500).json({ success: false, message: 'Server error fetching campaigns' });
+  }
+});
+
+// @route   GET /api/campaigns/pending-approval
+// @desc    List citizen-created movements waiting for admin approval
+// @access  Private (Admin)
+router.get('/pending-approval', protect, authorize('admin'), async (req, res) => {
+  try {
+    const campaigns = await Campaign.find({ status: 'pending_approval' })
+      .populate('organizer', 'name email role city')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, count: campaigns.length, campaigns });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch pending movements' });
+  }
+});
+
+// @route   PUT /api/campaigns/:id/review
+// @desc    Approve or reject a citizen-created movement
+// @access  Private (Admin)
+router.put('/:id/review', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { decision } = req.body;
+    if (!['approve', 'reject'].includes(decision)) {
+      return res.status(400).json({ success: false, message: "Decision must be 'approve' or 'reject'" });
+    }
+
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign || campaign.status !== 'pending_approval') {
+      return res.status(404).json({ success: false, message: 'Pending movement not found' });
+    }
+
+    campaign.status = decision === 'approve' ? 'active' : 'rejected';
+    await campaign.save();
+    res.json({ success: true, message: `Movement ${decision}d successfully`, campaign });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to review movement' });
   }
 });
 
@@ -57,7 +108,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Campaign not found' });
     }
 
-    res.json({ success: true, campaign });
+    const volunteerCount = await Task.distinct('assignedTo', {
+      campaignId: campaign._id,
+      assignedTo: { $ne: null },
+    });
+
+    res.json({
+      success: true,
+      campaign: { ...campaign.toObject(), volunteerCount: volunteerCount.length },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error retrieving campaign' });
   }
@@ -76,6 +135,7 @@ router.post('/', protect, authorize('campaigner', 'admin'), async (req, res) => 
       location,
       bannerImage,
       targetSignatures,
+      targetVolunteers,
       targetAmount,
       modularBlocks,
       eventDetails,
@@ -91,6 +151,7 @@ router.post('/', protect, authorize('campaigner', 'admin'), async (req, res) => 
         bannerImage ||
         'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=80',
       targetSignatures: targetSignatures || 1000,
+      targetVolunteers: targetVolunteers || 25,
       targetAmount: targetAmount || 50000,
       modularBlocks: modularBlocks || {
         hasPetition: true,
@@ -100,12 +161,12 @@ router.post('/', protect, authorize('campaigner', 'admin'), async (req, res) => 
       },
       eventDetails: eventDetails || {},
       organizer: req.user.id,
-      status: 'active',
+      status: 'pending_approval',
     });
 
     res.status(201).json({
       success: true,
-      message: 'Campaign created successfully',
+      message: 'Campaign submitted for admin approval',
       campaign,
     });
   } catch (error) {

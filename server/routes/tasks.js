@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
 const User = require('../models/User');
+const Campaign = require('../models/Campaign');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 const { upload, processUploadedPhoto } = require('../middleware/uploadMiddleware');
+const { getTaskRecommendations } = require('../services/taskRecommender');
 
 // Helper to auto-release expired tasks
 const releaseExpiredTasks = async () => {
@@ -45,6 +47,9 @@ router.get('/', async (req, res) => {
       query.requiredSkills = { $in: [new RegExp(skill, 'i')] };
     }
 
+    const activeCampaigns = await Campaign.find({ status: 'active' }).select('_id');
+    query.campaignId = query.campaignId || { $in: activeCampaigns.map((campaign) => campaign._id) };
+
     const tasks = await Task.find(query)
       .populate('campaignId', 'title category location')
       .populate('assignedTo', 'name email city skills')
@@ -82,6 +87,34 @@ router.get('/my-tasks', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/tasks/recommended
+// @desc    Rank available tasks for the logged-in citizen using content-based ML
+// @access  Private (Citizen)
+router.get('/recommended', protect, async (req, res) => {
+  try {
+    await releaseExpiredTasks();
+
+    const activeCampaigns = await Campaign.find({ status: 'active' }).select('_id');
+    const tasks = await Task.find({
+      status: 'available',
+      campaignId: { $in: activeCampaigns.map((campaign) => campaign._id) },
+    })
+      .populate('campaignId', 'title category summary location')
+      .sort({ createdAt: -1 });
+    const recommendations = getTaskRecommendations(req.user, tasks).slice(0, 20);
+
+    res.json({
+      success: true,
+      model: 'tfidf-cosine-hybrid-v1',
+      count: recommendations.length,
+      tasks: recommendations,
+    });
+  } catch (error) {
+    console.error('Error generating task recommendations:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate task recommendations' });
+  }
+});
+
 // @route   POST /api/tasks
 // @desc    Create new task under a campaign
 // @access  Private (Campaigner / Admin)
@@ -98,6 +131,10 @@ router.post('/', protect, authorize('campaigner', 'admin'), async (req, res) => 
       deadlineHours,
     } = req.body;
 
+    const campaign = await Campaign.findById(campaignId);
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
     const task = await Task.create({
       campaignId,
       title,
