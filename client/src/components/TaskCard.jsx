@@ -150,6 +150,16 @@ const TaskCard = ({ task, currentUser, onTaskUpdated }) => {
               </span>
             ))}
           </div>
+
+          {task.recommendationScore !== undefined && (
+            <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 px-3 py-2">
+              <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
+                <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Recommended for you</span>
+                <span>{task.recommendationScore}% match</span>
+              </div>
+              <p className="text-[10px] text-brand-700/80 mt-1">{task.recommendationReasons?.join(' · ')}</p>
+            </div>
+          )}
         </div>
 
         {/* Action Button */}

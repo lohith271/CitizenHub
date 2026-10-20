@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Check, Sparkles, AlertCircle, Layers, FileText, Heart, Calendar, ArrowRight } from 'lucide-react';
 
 const CATEGORIES = [
@@ -25,6 +26,8 @@ const SKILL_OPTIONS = [
 
 const CampaignBuilder = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isVolunteer = user?.role === 'citizen';
 
   // Campaign Basics
   const [title, setTitle] = useState('');
@@ -44,6 +47,7 @@ const CampaignBuilder = () => {
   const [targetAmount, setTargetAmount] = useState(100000);
 
   const [hasTasks, setHasTasks] = useState(true);
+  const [targetVolunteers, setTargetVolunteers] = useState(25);
   const [tasks, setTasks] = useState([
     {
       title: 'Create 3 Social Media Banners for Launch',
@@ -57,6 +61,52 @@ const CampaignBuilder = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [prediction, setPrediction] = useState(null);
+  const [predicting, setPredicting] = useState(false);
+
+  useEffect(() => {
+    const runPrediction = async () => {
+      if (!user || !user.id) {
+        setPrediction(null);
+        return;
+      }
+
+      if (!title.trim() && !summary.trim()) {
+        setPrediction(null);
+        return;
+      }
+
+      setPredicting(true);
+      try {
+        const payload = {
+          category,
+          location,
+          target_signatures: Number(targetSignatures) || 0,
+          target_volunteers: Number(targetVolunteers) || 0,
+          target_amount: Number(targetAmount) || 0,
+          raised_amount: 0,
+          organizer_reliability: user?.reliabilityScore || 70,
+          summary_length: summary.trim().split(/\s+/).filter(Boolean).length,
+          description_length: description.trim().split(/\s+/).filter(Boolean).length,
+          days_active: 1,
+          summary,
+          description,
+        };
+
+        const res = await api.post('/ml/predict', payload);
+        if (res.data.success) {
+          setPrediction(res.data.prediction);
+        }
+      } catch (err) {
+        console.error('Prediction failed:', err);
+      } finally {
+        setPredicting(false);
+      }
+    };
+
+    const timer = setTimeout(runPrediction, 400);
+    return () => clearTimeout(timer);
+  }, [title, category, location, summary, description, targetSignatures, targetVolunteers, targetAmount, user]);
 
   const addTaskField = () => {
     setTasks([
@@ -97,6 +147,7 @@ const CampaignBuilder = () => {
         description,
         bannerImage,
         targetSignatures: hasPetition ? Number(targetSignatures) : 0,
+        targetVolunteers: hasTasks ? Number(targetVolunteers) : 0,
         targetAmount: hasDonation ? Number(targetAmount) : 0,
         modularBlocks: {
           hasPetition,
@@ -128,6 +179,9 @@ const CampaignBuilder = () => {
           }
         }
 
+        if (campRes.data.campaign.status === 'pending_approval') {
+          alert('Your campaign was submitted. An admin must approve it before it is published.');
+        }
         navigate('/campaigns');
       }
     } catch (err) {
@@ -143,11 +197,15 @@ const CampaignBuilder = () => {
       <div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-bold uppercase tracking-wider mb-2">
           <Layers className="w-4 h-4 text-brand-600" />
-          Campaigner Studio
+          {isVolunteer ? 'Volunteer Movement Submission' : 'Campaigner Studio'}
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Modular Campaign Builder</h1>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          {isVolunteer ? 'Submit a New Movement' : 'Modular Campaign Builder'}
+        </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Configure actions, set petition goals, and recruit volunteers matching specific skill sets.
+          {isVolunteer
+            ? 'Share a civic movement with the community. An admin will review it before publication.'
+            : 'Configure actions, set petition goals, and recruit volunteers matching specific skill sets.'}
         </p>
       </div>
 
@@ -229,6 +287,29 @@ const CampaignBuilder = () => {
               ></textarea>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-5 h-5 text-brand-600" />
+            AI Campaign Success Forecast
+          </h2>
+
+          {predicting ? (
+            <div className="text-xs text-slate-500">Calculating forecast...</div>
+          ) : prediction ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl border border-brand-200 bg-brand-50">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-brand-700">Predicted Success</div>
+                <div className="text-2xl font-black text-brand-900">{prediction.probability_pct}%</div>
+              </div>
+              <div className="px-3 py-1.5 rounded-full bg-white border border-brand-200 text-brand-800 text-xs font-bold uppercase tracking-wider">
+                {prediction.label} chance
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500">Add campaign details to generate a forecast.</div>
+          )}
         </div>
 
         {/* Section 2: Modular Action Blocks */}
@@ -313,6 +394,17 @@ const CampaignBuilder = () => {
 
             {hasTasks && (
               <div className="space-y-4 pt-2 border-t border-slate-200">
+                <div className="flex items-center gap-3 text-xs">
+                  <label className="font-bold text-slate-700">Volunteer Goal:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={targetVolunteers}
+                    onChange={(e) => setTargetVolunteers(e.target.value)}
+                    className="w-28 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold"
+                  />
+                  <span className="text-slate-500">people needed for this movement</span>
+                </div>
                 {tasks.map((task, idx) => (
                   <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
@@ -399,7 +491,13 @@ const CampaignBuilder = () => {
           disabled={submitting}
           className="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          {submitting ? 'Publishing Campaign...' : 'Publish Modular Campaign & Mobilize'}
+          {submitting
+            ? isVolunteer
+              ? 'Submitting Movement...'
+              : 'Publishing Campaign...'
+            : isVolunteer
+              ? 'Submit Movement for Admin Approval'
+              : 'Publish Modular Campaign & Mobilize'}
           <ArrowRight className="w-5 h-5" />
         </button>
       </form>

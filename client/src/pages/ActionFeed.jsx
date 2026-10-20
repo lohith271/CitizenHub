@@ -20,13 +20,13 @@ const ActionFeed = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const fetchData = async () => {
     try {
       const [campRes, taskRes] = await Promise.all([
         api.get('/campaigns'),
-        api.get('/tasks'),
+        user ? api.get('/tasks/recommended') : api.get('/tasks'),
       ]);
 
       if (campRes.data.success) setCampaigns(campRes.data.campaigns);
@@ -60,11 +60,11 @@ const ActionFeed = () => {
     }
   };
 
-  // Filter tasks matching user skills
+  // Recommended tasks are already ranked by the backend ML service.
   const userSkills = user?.skills || [];
   const filteredTasks = tasks.filter((t) => {
     if (filter === 'matched') {
-      return t.requiredSkills.some((s) => userSkills.includes(s));
+      return t.recommendationScore >= 40 || t.requiredSkills.some((skill) => userSkills.includes(skill));
     }
     return true;
   });
@@ -243,7 +243,7 @@ const ActionFeed = () => {
         </div>
       </div>
 
-      {/* DONATION MODAL (Member 4 - Razorpay Single Currency INR) */}
+      {/* DONATION MODAL (Razorpay Single Currency INR) */}
       {donationModal && (
         <RazorpayModal
           campaign={donationModal}

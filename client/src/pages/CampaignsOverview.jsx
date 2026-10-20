@@ -254,10 +254,16 @@ const CampaignsOverview = () => {
                     {/* Crowdfunding Bar (if enabled) */}
                     {camp.modularBlocks?.hasDonation && (
                       <div className="flex items-center justify-between text-xs px-1 text-slate-500 font-medium">
-                        <span>💰 Raised in INR:</span>
+                        <span>Total collected:</span>
                         <strong className="text-emerald-700 font-bold">
-                          ₹{(camp.raisedAmount || 0).toLocaleString()}
+                          ₹{(camp.raisedAmount || 0).toLocaleString()} / ₹{(camp.targetAmount || 0).toLocaleString()}
                         </strong>
+                      </div>
+                    )}
+                    {camp.modularBlocks?.hasTasks && (
+                      <div className="flex items-center justify-between text-xs px-1 text-slate-500 font-medium">
+                        <span>Volunteers:</span>
+                        <strong className="text-brand-700 font-bold">{camp.volunteerCount || 0} / {camp.targetVolunteers || 0}</strong>
                       </div>
                     )}
                   </div>

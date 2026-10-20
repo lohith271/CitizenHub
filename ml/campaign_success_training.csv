@@ -1,0 +1,15 @@
+category,location,target_signatures,target_volunteers,target_amount,raised_amount,organizer_reliability,summary_length,description_length,days_active,success
+Air Pollution,Delhi,5000,25,100000,85000,80,120,900,14,1
+Climate Action,Bengaluru,12000,40,250000,260000,92,180,1100,21,1
+Water & Sanitation,National,7000,30,150000,50000,68,140,700,10,0
+Women Safety & Equality,Mumbai,9000,35,200000,170000,88,160,980,18,1
+Civic Rights & Justice,Kolkata,4500,20,90000,40000,62,110,640,8,0
+Air Pollution,Pune,6000,28,120000,95000,75,150,820,12,1
+Forest & Wildlife,Bengaluru,8000,22,140000,73000,71,130,760,11,0
+Climate Action,National,15000,50,300000,285000,95,200,1200,22,1
+Water & Sanitation,Delhi,6500,26,110000,61000,69,128,690,9,0
+Women Safety & Equality,Hyderabad,10500,38,220000,190000,90,170,990,19,1
+Air Pollution,Chennai,7400,30,160000,110000,77,145,860,15,1
+Civic Rights & Justice,Delhi,4700,18,85000,38000,60,100,620,7,0
+Climate Action,Pune,13000,44,270000,220000,89,190,1080,20,1
+Water & Sanitation,Mumbai,6800,29,125000,64000,72,134,710,10,0

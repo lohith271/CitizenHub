@@ -23,6 +23,12 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
+const CampaignerRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-12 text-center text-slate-400">Loading session...</div>;
+  return user?.role === 'campaigner' || user?.role === 'admin' ? children : <Navigate to="/" />;
+};
+
 function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -60,13 +66,22 @@ function AppContent() {
             }
           />
 
-          {/* Member 3 Campaigner & Admin Routes */}
+          {/* Campaigner & Admin Routes */}
           <Route path="/admin/approvals" element={<AdminApprovals />} />
-          <Route path="/campaigner/studio" element={<CampaignBuilder />} />
-          <Route path="/campaigner/volunteers" element={<VolunteerDirectory />} />
-          <Route path="/campaigner/reviews" element={<TaskReviewQueue />} />
+          <Route
+            path="/campaigner/studio"
+            element={<CampaignerRoute><CampaignBuilder /></CampaignerRoute>}
+          />
+          <Route
+            path="/campaigner/volunteers"
+            element={<CampaignerRoute><VolunteerDirectory /></CampaignerRoute>}
+          />
+          <Route
+            path="/campaigner/reviews"
+            element={<CampaignerRoute><TaskReviewQueue /></CampaignerRoute>}
+          />
 
-          {/* Member 4 Analytics Dashboard */}
+          {/* Analytics Dashboard */}
           <Route path="/analytics" element={<AnalyticsDashboard />} />
 
           <Route path="*" element={<Navigate to="/" />} />

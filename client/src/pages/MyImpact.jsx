@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TaskCard from '../components/TaskCard';
-import { Award, Sparkles, CheckCircle2, Clock, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { Award, Sparkles, CheckCircle2, Clock, ShieldCheck, ArrowRight, FileText, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const MyImpact = () => {
@@ -150,6 +150,64 @@ const MyImpact = () => {
           </div>
         </div>
       )}
+
+      {/* Accepted Work Records */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-brand-600" />
+          My Accepted Work & Submissions ({myTasks.length})
+        </h3>
+        {myTasks.length === 0 ? (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-sm text-slate-500">
+            Accepted tasks and submitted work will appear here.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {myTasks.map((task) => (
+              <article key={task._id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div>
+                    <h4 className="font-bold text-slate-900">{task.title}</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Campaign: {task.campaignId?.title || 'Campaign'} · Accepted {task.assignedAt ? new Date(task.assignedAt).toLocaleDateString() : 'recently'}
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold uppercase">
+                    {task.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <div className="font-bold uppercase text-slate-400 mb-1">What I submitted</div>
+                    <p className="text-slate-700">{task.proofSubmission?.notes || 'No proof submitted yet.'}</p>
+                    {task.proofSubmission?.submittedAt && (
+                      <p className="text-slate-400 mt-2">Submitted {new Date(task.proofSubmission.submittedAt).toLocaleString()}</p>
+                    )}
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <div className="font-bold uppercase text-slate-400 mb-1">Review result</div>
+                    <p className="text-slate-700">{task.reviewFeedback || (task.status === 'completed' ? 'Approved by campaigner.' : 'Waiting for campaigner review.')}</p>
+                    {task.proofSubmission?.submissionUrl && (
+                      <a href={task.proofSubmission.submissionUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-brand-700 font-bold hover:underline">
+                        Open submitted work <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                {task.proofSubmission?.photos?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {task.proofSubmission.photos.map((photo) => (
+                      <a key={photo} href={photo} target="_blank" rel="noreferrer" className="text-xs text-brand-700 font-bold hover:underline">
+                        View submitted photo
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

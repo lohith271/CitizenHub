@@ -10,6 +10,7 @@ node_modules/
 # Logs
 npm-debug.log*
 yarn-debug.log*
+*.log
 
 # Editor directories
 .vscode/

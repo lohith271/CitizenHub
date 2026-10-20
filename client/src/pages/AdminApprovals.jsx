@@ -4,6 +4,7 @@ import { ShieldCheck, CheckCircle2, XCircle, AlertCircle, Building, MapPin, Cale
 
 const AdminApprovals = () => {
   const [campaigners, setCampaigners] = useState([]);
+  const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
 
@@ -13,14 +14,29 @@ const AdminApprovals = () => {
 
   const fetchPendingCampaigners = async () => {
     try {
-      const res = await api.get('/auth/pending-campaigners');
-      if (res.data.success) {
-        setCampaigners(res.data.campaigners);
-      }
+      const [campaignerRes, movementRes] = await Promise.all([
+        api.get('/auth/pending-campaigners'),
+        api.get('/campaigns/pending-approval'),
+      ]);
+      if (campaignerRes.data.success) setCampaigners(campaignerRes.data.campaigners);
+      if (movementRes.data.success) setMovements(movementRes.data.campaigns);
     } catch (err) {
       console.error('Failed to fetch pending campaigners');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMovementDecision = async (id, decision, title) => {
+    try {
+      const res = await api.put(`/campaigns/${id}/review`, { decision });
+      if (res.data.success) {
+        setActionMessage(`${title} was ${decision === 'approve' ? 'approved and published' : 'rejected'}.`);
+        setMovements((prev) => prev.filter((movement) => movement._id !== id));
+        setTimeout(() => setActionMessage(''), 4000);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Movement review failed');
     }
   };
 
@@ -69,6 +85,39 @@ const AdminApprovals = () => {
           {actionMessage}
         </div>
       )}
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900">Campaign Approval Queue</h2>
+            <p className="text-sm text-slate-500">Review campaigns submitted by volunteers and campaigners before publishing them.</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-center">
+            <div className="text-xl font-black text-amber-700">{movements.length}</div>
+            <div className="text-[10px] font-bold uppercase text-amber-800">Pending Campaigns</div>
+          </div>
+        </div>
+        {movements.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-sm text-slate-500">No campaigns are waiting for approval.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {movements.map((movement) => (
+              <div key={movement._id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+                <div>
+                  <h3 className="font-bold text-slate-900">{movement.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1">Submitted by {movement.organizer?.name || 'Volunteer'} · {movement.location}</p>
+                </div>
+                <p className="text-sm text-slate-600 line-clamp-3">{movement.description}</p>
+                <div className="text-xs font-semibold text-slate-500">Needs {movement.targetVolunteers || 0} volunteers · Goal ₹{(movement.targetAmount || 0).toLocaleString()}</div>
+                <div className="flex gap-3">
+                  <button onClick={() => handleMovementDecision(movement._id, 'reject', movement.title)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">Reject</button>
+                  <button onClick={() => handleMovementDecision(movement._id, 'approve', movement.title)} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold">Approve & Publish</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Applications List */}
       {loading ? (
